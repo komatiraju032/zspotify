@@ -108,7 +108,7 @@ def search(search_term):
     total_tracks = 0
     if TRACK in params['type'].split(','):
         tracks = resp[TRACKS][ITEMS]
-        total_tracks = process_tracks_input(tracks, data, 0)
+        total_tracks = process_tracks_input(tracks, data, 1)
 
     total_albums = 0
     if ALBUM in params['type'].split(','):
@@ -119,7 +119,6 @@ def search(search_term):
     if ARTIST in params['type'].split(','):
         artists = resp[ARTISTS][ITEMS]
         total_artists = process_artist_input(artists, data, total_tracks + total_albums)
-        total_artists = total_artists - total_tracks - total_albums
 
     total_playlists = 0
     if PLAYLIST in params['type'].split(','):
@@ -199,7 +198,7 @@ def process_album_input(albums: list, data: list, prev_total: int) -> int:
         print('###  ALBUMS  ###')
         album_data = []
         for album in albums:
-            album_data.append([counter, album[NAME],
+            album_data.append([counter + 1, album[NAME],
                                ','.join([artist[NAME] for artist in album[ARTISTS]])])
             data.append({
                 ID: album[ID],
@@ -223,7 +222,7 @@ def process_artist_input(artists: list, data: list, prev_total: int) -> int:
         print('###  ARTISTS  ###')
         artist_data = []
         for artist in artists:
-            artist_data.append([counter, artist[NAME]])
+            artist_data.append([counter + 1, artist[NAME]])
             data.append({
                 ID: artist[ID],
                 NAME: artist[NAME],
@@ -246,7 +245,7 @@ def process_playlist_input(playlists: list, data: list, prev_total: int) -> int:
         playlist_data = []
         for playlist in playlists:
             playlist_data.append(
-                [counter, playlist[NAME], playlist[OWNER][DISPLAY_NAME]])
+                [counter + 1, playlist[NAME], playlist[OWNER][DISPLAY_NAME]])
             data.append({
                 ID: playlist[ID],
                 NAME: playlist[NAME],
