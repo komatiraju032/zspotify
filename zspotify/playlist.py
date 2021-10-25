@@ -74,7 +74,7 @@ def download_from_user_playlist():
     playlist_choices = input('ID(s): ').split('-')
 
     if len(playlist_choices) == 1:
-        download_playlist(playlists, playlist_choices[0])
+        download_playlist(playlists[0])
     else:
         start = int(playlist_choices[0])
         end = int(playlist_choices[1]) + 1
@@ -82,6 +82,6 @@ def download_from_user_playlist():
         print(f'Downloading from {start} to {end}...')
 
         for playlist_number in range(start, end):
-            download_playlist(playlists, playlist_number)
+            download_playlist(playlists[playlist_number])
 
         print('\n**All playlists have been downloaded**\n')
