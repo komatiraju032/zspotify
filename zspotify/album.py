@@ -37,7 +37,7 @@ def get_artist_albums(artist_id):
     # Return a list each album's id
     album_ids = [resp[ITEMS][i][ID] for i in range(len(resp[ITEMS]))]
     # Recursive requests to get all albums including singles an EPs
-    while resp['next'] is not None:
+    while resp['next']:
         resp = ZSpotify.invoke_url(resp['next'])
         album_ids.extend([resp[ITEMS][i][ID] for i in range(len(resp[ITEMS]))])
 

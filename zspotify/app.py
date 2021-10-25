@@ -28,66 +28,53 @@ def client() -> None:
         ZSpotify.DOWNLOAD_QUALITY = AudioQuality.HIGH
 
     if len(sys.argv) > 1:
-        if sys.argv[1] == '-p' or sys.argv[1] == '--playlist':
-            download_from_user_playlist()
-        elif sys.argv[1] == '-ls' or sys.argv[1] == '--liked-songs':
-            for song in get_saved_tracks():
-                if not song[TRACK][NAME]:
-                    print(
-                        '###   SKIPPING:  SONG DOES NOT EXIST ON SPOTIFY ANYMORE   ###')
-                else:
-                    download_track(song[TRACK][ID], 'Liked Songs/')
-                print('\n')
-        else:
-            track_id, album_id, playlist_id, episode_id, show_id, artist_id = regex_input_for_urls(
-                sys.argv[1])
-
-            if track_id is not None:
-                download_track(track_id)
-            elif artist_id is not None:
-                download_artist_albums(artist_id)
-            elif album_id is not None:
-                download_album(album_id)
-            elif playlist_id is not None:
-                playlist_songs = get_playlist_songs(playlist_id)
-                name, _ = get_playlist_info(playlist_id)
-                for song in playlist_songs:
-                    download_track(song[TRACK][ID],
-                                   sanitize_data(name) + '/')
-                    print('\n')
-            elif episode_id is not None:
-                download_episode(episode_id)
-            elif show_id is not None:
-                for episode in get_show_episodes(show_id):
-                    download_episode(episode)
-
+        process_sysargs_input()
     else:
         search_text = ''
         while len(search_text) == 0:
             search_text = input('Enter search or URL: ')
 
-        track_id, album_id, playlist_id, episode_id, show_id, artist_id = regex_input_for_urls(
-            search_text)
+        process_url_input(search_text, call_search=True)
 
-        if track_id is not None:
-            download_track(track_id)
-        elif artist_id is not None:
-            download_artist_albums(artist_id)
-        elif album_id is not None:
-            download_album(album_id)
-        elif playlist_id is not None:
-            playlist_songs = get_playlist_songs(playlist_id)
-            name, _ = get_playlist_info(playlist_id)
-            for song in playlist_songs:
-                download_track(song[TRACK][ID], sanitize_data(name) + '/')
-                print('\n')
-        elif episode_id is not None:
-            download_episode(episode_id)
-        elif show_id is not None:
-            for episode in get_show_episodes(show_id):
-                download_episode(episode)
-        else:
-            search(search_text)
+
+def process_sysargs_input():
+    if sys.argv[1] == '-p' or sys.argv[1] == '--playlist':
+        download_from_user_playlist()
+    elif sys.argv[1] == '-ls' or sys.argv[1] == '--liked-songs':
+        for song in get_saved_tracks():
+            if not song[TRACK][NAME]:
+                print(
+                    '###   SKIPPING:  SONG DOES NOT EXIST ON SPOTIFY ANYMORE   ###')
+            else:
+                download_track(song[TRACK][ID], 'Liked Songs/')
+            print('\n')
+    else:
+        process_url_input(sys.argv[1])
+
+
+def process_url_input(url, call_search=True):
+    track_id, album_id, playlist_id, episode_id, show_id, artist_id = regex_input_for_urls(url)
+
+    if track_id:
+        download_track(track_id)
+    elif artist_id:
+        download_artist_albums(artist_id)
+    elif album_id:
+        download_album(album_id)
+    elif playlist_id:
+        playlist_songs = get_playlist_songs(playlist_id)
+        name, _ = get_playlist_info(playlist_id)
+        for song in playlist_songs:
+            download_track(song[TRACK][ID],
+                           sanitize_data(name) + '/')
+            print('\n')
+    elif episode_id:
+        download_episode(episode_id)
+    elif show_id:
+        for episode in get_show_episodes(show_id):
+            download_episode(episode)
+    elif call_search:
+        search(url)
 
 
 def search(search_term):
@@ -102,26 +89,25 @@ def search(search_term):
     for split in splits:
         index = splits.index(split)
 
-        if split[0] == '-' and len(split) > 1:
-            if len(splits)-1 == index:
-                raise IndexError('No parameters passed after option: {}\n'.
-                                 format(split))
+        if split[0] == '-' and len(split) > 1 and len(splits) - 1 == index:
+            raise IndexError('No parameters passed after option: {}\n'.
+                             format(split))
 
         if split == '-l' or split == '-limit':
             try:
-                int(splits[index+1])
+                int(splits[index + 1])
             except ValueError:
-                raise ValueError('Paramater passed after {} option must be an integer.\n'.
+                raise ValueError('Parameter passed after {} option must be an integer.\n'.
                                  format(split))
-            if int(splits[index+1]) > 50:
+            if int(splits[index + 1]) > 50:
                 raise ValueError('Invalid limit passed. Max is 50.\n')
-            params['limit'] = splits[index+1]
+            params['limit'] = splits[index + 1]
 
         if split == '-t' or split == '-type':
 
             allowed_types = ['track', 'playlist', 'album', 'artist']
             passed_types = []
-            for i in range(index+1, len(splits)):
+            for i in range(index + 1, len(splits)):
                 if splits[i][0] == '-':
                     break
 
@@ -148,7 +134,7 @@ def search(search_term):
     resp = ZSpotify.invoke_url_with_params(SEARCH_URL, **params)
 
     counter = 1
-    dics = []
+    discs = []
 
     total_tracks = 0
     if TRACK in params['type'].split(','):
@@ -163,8 +149,8 @@ def search(search_term):
                     explicit = ''
 
                 track_data.append([counter, f'{track[NAME]} {explicit}',
-                                  ','.join([artist[NAME] for artist in track[ARTISTS]])])
-                dics.append({
+                                   ','.join([artist[NAME] for artist in track[ARTISTS]])])
+                discs.append({
                     ID: track[ID],
                     NAME: track[NAME],
                     'type': TRACK,
@@ -173,7 +159,7 @@ def search(search_term):
                 counter += 1
             total_tracks = counter - 1
             print(tabulate(track_data, headers=[
-                  'S.NO', 'Name', 'Artists'], tablefmt='pretty'))
+                'S.NO', 'Name', 'Artists'], tablefmt='pretty'))
             print('\n')
             del tracks
             del track_data
@@ -186,8 +172,8 @@ def search(search_term):
             album_data = []
             for album in albums:
                 album_data.append([counter, album[NAME],
-                                  ','.join([artist[NAME] for artist in album[ARTISTS]])])
-                dics.append({
+                                   ','.join([artist[NAME] for artist in album[ARTISTS]])])
+                discs.append({
                     ID: album[ID],
                     NAME: album[NAME],
                     'type': ALBUM,
@@ -196,7 +182,7 @@ def search(search_term):
                 counter += 1
             total_albums = counter - total_tracks - 1
             print(tabulate(album_data, headers=[
-                  'S.NO', 'Album', 'Artists'], tablefmt='pretty'))
+                'S.NO', 'Album', 'Artists'], tablefmt='pretty'))
             print('\n')
             del albums
             del album_data
@@ -209,7 +195,7 @@ def search(search_term):
             artist_data = []
             for artist in artists:
                 artist_data.append([counter, artist[NAME]])
-                dics.append({
+                discs.append({
                     ID: artist[ID],
                     NAME: artist[NAME],
                     'type': ARTIST,
@@ -217,7 +203,7 @@ def search(search_term):
                 counter += 1
             total_artists = counter - total_tracks - total_albums - 1
             print(tabulate(artist_data, headers=[
-                  'S.NO', 'Name'], tablefmt='pretty'))
+                'S.NO', 'Name'], tablefmt='pretty'))
             print('\n')
             del artists
             del artist_data
@@ -231,7 +217,7 @@ def search(search_term):
             for playlist in playlists:
                 playlist_data.append(
                     [counter, playlist[NAME], playlist[OWNER][DISPLAY_NAME]])
-                dics.append({
+                discs.append({
                     ID: playlist[ID],
                     NAME: playlist[NAME],
                     'type': PLAYLIST,
@@ -239,7 +225,7 @@ def search(search_term):
                 counter += 1
             total_playlists = counter - total_artists - total_tracks - total_albums - 1
             print(tabulate(playlist_data, headers=[
-                  'S.NO', 'Name', 'Owner'], tablefmt='pretty'))
+                'S.NO', 'Name', 'Owner'], tablefmt='pretty'))
             print('\n')
             del playlists
             del playlist_data
@@ -253,8 +239,8 @@ def search(search_term):
         inputs = split_input(selection)
         for pos in inputs:
             position = int(pos)
-            for dic in dics:
-                print_pos = dics.index(dic) + 1
+            for dic in discs:
+                print_pos = discs.index(dic) + 1
                 if print_pos == position:
                     if dic['type'] == TRACK:
                         download_track(dic[ID])
