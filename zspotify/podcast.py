@@ -1,3 +1,4 @@
+"""This module provides helper function related to podcasts and downloading the podcasts"""
 import os
 from typing import Optional, Tuple
 
@@ -13,6 +14,7 @@ SHOWS_URL = 'https://api.spotify.com/v1/shows'
 
 
 def get_episode_info(episode_id_str) -> Tuple[Optional[str], Optional[str]]:
+    """Returns metadata of the given episode name"""
     info = ZSpotify.invoke_url(f'{EPISODE_INFO_URL}/{episode_id_str}')
     if ERROR in info:
         return None, None
@@ -20,12 +22,14 @@ def get_episode_info(episode_id_str) -> Tuple[Optional[str], Optional[str]]:
 
 
 def get_show_episodes(show_id_str) -> list:
+    """Returns the list of episodes for the given show name"""
     episodes = []
     offset = 0
     limit = 50
 
     while True:
-        resp = ZSpotify.invoke_url_with_params(f'{SHOWS_URL}/{show_id_str}/episodes', limit=limit, offset=offset)
+        resp = ZSpotify.invoke_url_with_params(f'{SHOWS_URL}/{show_id_str}/episodes',
+                                               limit=limit, offset=offset)
         offset += limit
         for episode in resp[ITEMS]:
             episodes.append(episode[ID])
@@ -36,6 +40,7 @@ def get_show_episodes(show_id_str) -> list:
 
 
 def download_episode(episode_id) -> None:
+    """Downloads the podcast with the specified id"""
     podcast_name, episode_name = get_episode_info(episode_id)
 
     extra_paths = podcast_name + '/'
@@ -48,7 +53,8 @@ def download_episode(episode_id) -> None:
         episode_id = EpisodeId.from_base62(episode_id)
         stream = ZSpotify.get_content_stream(episode_id, ZSpotify.DOWNLOAD_QUALITY)
 
-        download_directory = os.path.dirname(__file__) + ZSpotify.get_config(ROOT_PODCAST_PATH) + extra_paths
+        download_directory = (os.path.dirname(__file__) +
+                              ZSpotify.get_config(ROOT_PODCAST_PATH) + extra_paths)
         create_download_directory(download_directory)
 
         total_size = stream.input_stream.size
@@ -59,9 +65,9 @@ def download_episode(episode_id) -> None:
             unit='B',
             unit_scale=True,
             unit_divisor=1024
-        ) as bar:
+        ) as p_bar:
             for _ in range(int(total_size / ZSpotify.get_config(CHUNK_SIZE)) + 1):
-                bar.update(file.write(
+                p_bar.update(file.write(
                     stream.input_stream.stream().read(ZSpotify.get_config(CHUNK_SIZE))))
 
         # convert_audio_format(ROOT_PODCAST_PATH +

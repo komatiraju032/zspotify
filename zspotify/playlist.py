@@ -1,3 +1,4 @@
+"""This module provides the helper functions related playlists and downloading playlists"""
 from tqdm import tqdm
 
 from const import ITEMS, ID, TRACK, NAME
@@ -27,23 +28,25 @@ def get_all_playlists():
 
 def get_playlist_songs(playlist_id):
     """ returns list of songs in a playlist """
-    songs = []
+    playlist_songs = []
     offset = 0
     limit = 100
 
     while True:
-        resp = ZSpotify.invoke_url_with_params(f'{PLAYLISTS_URL}/{playlist_id}/tracks', limit=limit, offset=offset)
+        resp = ZSpotify.invoke_url_with_params(f'{PLAYLISTS_URL}/{playlist_id}/tracks',
+                                               limit=limit, offset=offset)
         offset += limit
-        songs.extend(resp[ITEMS])
+        playlist_songs.extend(resp[ITEMS])
         if len(resp[ITEMS]) < limit:
             break
 
-    return songs
+    return playlist_songs
 
 
 def get_playlist_info(playlist_id):
     """ Returns information scraped from playlist """
-    resp = ZSpotify.invoke_url(f'{PLAYLISTS_URL}/{playlist_id}?fields=name,owner(display_name)&market=from_token')
+    url = f'{PLAYLISTS_URL}/{playlist_id}?fields=name,owner(display_name)&market=from_token'
+    resp = ZSpotify.invoke_url(url)
     return resp['name'].strip(), resp['owner']['display_name'].strip()
 
 
@@ -69,7 +72,8 @@ def download_from_user_playlist():
 
     print('\n> SELECT A PLAYLIST BY ID')
     print('> SELECT A RANGE BY ADDING A DASH BETWEEN BOTH ID\'s')
-    print('> For example, typing 10 to get one playlist or 10-20 to get\nevery playlist from 10-20 (inclusive)\n')
+    print('> For example, typing 10 to get one playlist or 10-20 to get'
+          '\nevery playlist from 10-20 (inclusive)\n')
 
     playlist_choices = input('ID(s): ').split('-')
 

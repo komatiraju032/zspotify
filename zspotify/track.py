@@ -1,3 +1,4 @@
+"""This module provides function related to individual tracks and downloading the tracks"""
 import os
 import time
 from typing import Any, Tuple, List
@@ -7,9 +8,9 @@ from librespot.metadata import TrackId
 from pydub import AudioSegment
 from tqdm import tqdm
 
-from const import TRACKS, ALBUM, NAME, ITEMS, DISC_NUMBER, TRACK_NUMBER, IS_PLAYABLE, ARTISTS, IMAGES, URL, \
-    RELEASE_DATE, ID, TRACKS_URL, SAVED_TRACKS_URL, SPLIT_ALBUM_DISCS, ROOT_PATH, DOWNLOAD_FORMAT, CHUNK_SIZE, \
-    SKIP_EXISTING_FILES, ANTI_BAN_WAIT_TIME, OVERRIDE_AUTO_WAIT
+from const import TRACKS, ALBUM, NAME, ITEMS, DISC_NUMBER, TRACK_NUMBER, IS_PLAYABLE, ARTISTS, \
+    RELEASE_DATE, ID, TRACKS_URL, SAVED_TRACKS_URL, SPLIT_ALBUM_DISCS, ROOT_PATH, DOWNLOAD_FORMAT, \
+    SKIP_EXISTING_FILES, ANTI_BAN_WAIT_TIME, OVERRIDE_AUTO_WAIT, IMAGES, CHUNK_SIZE, URL
 from utils import sanitize_data, set_audio_tags, set_music_thumbnail, create_download_directory, \
     MusicFormat
 from zspotify import ZSpotify
@@ -48,40 +49,48 @@ def get_song_info(song_id) -> Tuple[List[str], str, str, Any, Any, Any, Any, Any
     scraped_song_id = info[TRACKS][0][ID]
     is_playable = info[TRACKS][0][IS_PLAYABLE]
 
-    return artists, album_name, name, image_url, release_year, disc_number, track_number, scraped_song_id, is_playable
+    return (artists, album_name, name, image_url, release_year, disc_number, track_number,
+            scraped_song_id, is_playable)
 
 
+# pylint: disable=R0914, W0703
 # noinspection PyBroadException
-def download_track(track_id: str, extra_paths='', prefix=False, prefix_value='', disable_progressbar=False) -> None:
+def download_track(track_id: str, extra_paths='', prefix=False,
+                   prefix_value='', disable_progressbar=False) -> None:
     """ Downloads raw song audio from Spotify """
 
     try:
         track_info = get_song_info(track_id)
-        (artists, album_name, name, image_url, release_year, disc_number,
-         track_number, scraped_song_id, is_playable) = track_info
-        song_name, filename, download_directory = pre_process_metadata(extra_paths, disc_number, artists, name, prefix,
-                                                                       prefix_value)
-    except Exception as e:
+        (artists, _, name, _, _, disc_number, _, scraped_song_id, is_playable) = track_info
+        song_name, filename, download_directory = \
+            pre_process_metadata(extra_paths, disc_number, artists, name, prefix, prefix_value)
+    except Exception:
         print('###   SKIPPING SONG - FAILED TO QUERY METADATA   ###')
-        print(e)
     else:
         try:
             if not is_playable:
                 print('\n###   SKIPPING:', song_name,
                       '(SONG IS UNAVAILABLE)   ###')
             else:
-                stream = get_track_stream(filename, song_name, track_id, scraped_song_id)
-                create_download_directory(download_directory)
-                write_stream_to_file(stream, filename, song_name, disable_progressbar, track_info)
-        except Exception as e:
+                if os.path.isfile(filename) and os.path.getsize(filename) \
+                        and ZSpotify.get_config(SKIP_EXISTING_FILES):
+                    print('\n###   SKIPPING:', song_name,
+                          '(SONG ALREADY EXISTS)   ###')
+                else:
+                    stream = get_track_stream(track_id, scraped_song_id)
+                    create_download_directory(download_directory)
+                    write_stream_to_file(stream, filename, song_name,
+                                         disable_progressbar, track_info)
+        except Exception:
             print('###   SKIPPING:', song_name,
                   '(GENERAL DOWNLOAD ERROR)   ###')
-            print(e)
             if os.path.exists(filename):
                 os.remove(filename)
 
 
+# pylint: disable=R0913
 def pre_process_metadata(extra_paths, disc_number, artists, name, prefix, prefix_value):
+    """Process the track metadata and creates necessary folders for downloading the song"""
     if ZSpotify.get_config(SPLIT_ALBUM_DISCS):
         download_directory = os.path.join(os.path.dirname(
             __file__), ZSpotify.get_config(ROOT_PATH), extra_paths, f'Disc {disc_number}')
@@ -99,22 +108,19 @@ def pre_process_metadata(extra_paths, disc_number, artists, name, prefix, prefix
     return song_name, filename, download_directory
 
 
-def get_track_stream(filename, song_name, track_id, scraped_song_id):
-    if os.path.isfile(filename) and os.path.getsize(filename) and ZSpotify.get_config(SKIP_EXISTING_FILES):
-        print('\n###   SKIPPING:', song_name,
-              '(SONG ALREADY EXISTS)   ###')
-    else:
-        if track_id != scraped_song_id:
-            track_id = scraped_song_id
-        track_id = TrackId.from_base62(track_id)
-        return ZSpotify.get_content_stream(
-            track_id, ZSpotify.DOWNLOAD_QUALITY)
+def get_track_stream(track_id, scraped_song_id):
+    """Returns the stream for the provided track id"""
+    if track_id != scraped_song_id:
+        track_id = scraped_song_id
+    track_id = TrackId.from_base62(track_id)
+    return ZSpotify.get_content_stream(
+        track_id, ZSpotify.DOWNLOAD_QUALITY)
 
 
 def write_stream_to_file(stream, filename, song_name, disable_progressbar, track_info):
+    """Writes the audio stream to file"""
     total_size = stream.input_stream.size
-    (artists, album_name, name, image_url, release_year, disc_number,
-     track_number, scraped_song_id, is_playable) = track_info
+    artists, album_name, name, image_url, release_year, disc_number, track_number, _, _ = track_info
     with open(filename, 'wb') as file, tqdm(
             desc=song_name,
             total=total_size,

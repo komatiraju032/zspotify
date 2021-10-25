@@ -1,3 +1,4 @@
+"""THis modules provides common function used by multiple modules"""
 import os
 import platform
 import re
@@ -13,11 +14,13 @@ from const import SANITIZE, ARTIST, TRACKTITLE, ALBUM, YEAR, DISCNUMBER, TRACKNU
 
 
 class MusicFormat(str, Enum):
-    MP3 = 'mp3',
-    OGG = 'ogg',
+    """Music format"""
+    MP3 = 'mp3'
+    OGG = 'ogg'
 
 
 def create_download_directory(download_path: str) -> None:
+    """Creates directory with the provided path"""
     os.makedirs(download_path, exist_ok=True)
 
 
@@ -67,7 +70,9 @@ def sanitize_data(value) -> str:
     return value.replace('|', '-')
 
 
-def set_audio_tags(filename, artists, name, album_name, release_year, disc_number, track_number) -> None:
+# pylint: disable=R0913
+def set_audio_tags(filename, artists, name, album_name, release_year,
+                   disc_number, track_number) -> None:
     """ sets music_tag metadata """
     tags = music_tag.load_file(filename)
     tags[ARTIST] = conv_artist_format(artists)
@@ -152,7 +157,7 @@ def regex_input_for_urls(search_input) -> Tuple[str, str, str, str, str, str]:
 
 
 def extract_info_from_regex_response(key, uri_data: Match[str], url_data: Match[str]):
+    """Extract the info from regex response"""
     if uri_data or url_data:
         return (uri_data if uri_data else url_data).group(key)
-    else:
-        return None
+    return None

@@ -1,3 +1,4 @@
+"""This module provides the commonly used strings as constants"""
 SANITIZE = ('\\', '/', ':', '*', '?', '\'', '<', '>', '"')
 
 SAVED_TRACKS_URL = 'https://api.spotify.com/v1/me/tracks'

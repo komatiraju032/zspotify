@@ -22,6 +22,7 @@ from const import CREDENTIALS_JSON, TYPE, \
 
 
 class ZSpotify:
+    """This class initializes the spotify session with provides user credentials"""
     SESSION: Session = None
     DOWNLOAD_QUALITY = None
     CONFIG = {}
@@ -53,6 +54,7 @@ class ZSpotify:
 
     @classmethod
     def load_config(cls) -> None:
+        """Loads the zspotify config json file to dictionary"""
         app_dir = os.path.dirname(__file__)
         true_config_file_path = os.path.join(app_dir, CONFIG_FILE_PATH)
         if not os.path.exists(true_config_file_path):
@@ -65,33 +67,40 @@ class ZSpotify:
 
     @classmethod
     def get_config(cls, key) -> Any:
+        """Return the value from the config for given key"""
         return cls.CONFIG.get(key)
 
     @classmethod
     def get_content_stream(cls, content_id, quality):
-        return cls.SESSION.content_feeder().load(content_id, VorbisOnlyAudioQuality(quality), False, None)
+        """Returns stream for the provided track/episode id"""
+        return cls.SESSION.content_feeder().load(content_id, VorbisOnlyAudioQuality(quality),
+                                                 False, None)
 
     @classmethod
     def __get_auth_token(cls):
+        """Returns authentication token"""
         return cls.SESSION.tokens().get_token(USER_READ_EMAIL, PLAYLIST_READ_PRIVATE).access_token
 
     @classmethod
     def get_auth_header(cls):
-        return {
-            AUTHORIZATION: f'Bearer {cls.__get_auth_token()}'}
+        """Returns authorization header"""
+        return { AUTHORIZATION: f'Bearer {cls.__get_auth_token()}'}
 
     @classmethod
     def get_auth_header_and_params(cls, limit, offset):
+        """Returns http headers for provided params and authorization headers"""
         return {AUTHORIZATION: f'Bearer {cls.__get_auth_token()}'}, {LIMIT: limit, OFFSET: offset}
 
     @classmethod
     def invoke_url_with_params(cls, url, limit, offset, **kwargs):
+        """Makes an http call to the provided url with auth headers and provided params"""
         headers, params = cls.get_auth_header_and_params(limit=limit, offset=offset)
         params.update(kwargs)
         return requests.get(url, headers=headers, params=params).json()
 
     @classmethod
     def invoke_url(cls, url):
+        """Makes an http call to the provided url with auth headers"""
         headers = cls.get_auth_header()
         return requests.get(url, headers=headers).json()
 
