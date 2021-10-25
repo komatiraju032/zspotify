@@ -134,7 +134,7 @@ def search(search_term):
     resp = ZSpotify.invoke_url_with_params(SEARCH_URL, **params)
 
     counter = 1
-    discs = []
+    dics = []
 
     total_tracks = 0
     if TRACK in params['type'].split(','):
@@ -150,7 +150,7 @@ def search(search_term):
 
                 track_data.append([counter, f'{track[NAME]} {explicit}',
                                    ','.join([artist[NAME] for artist in track[ARTISTS]])])
-                discs.append({
+                dics.append({
                     ID: track[ID],
                     NAME: track[NAME],
                     'type': TRACK,
@@ -173,7 +173,7 @@ def search(search_term):
             for album in albums:
                 album_data.append([counter, album[NAME],
                                    ','.join([artist[NAME] for artist in album[ARTISTS]])])
-                discs.append({
+                dics.append({
                     ID: album[ID],
                     NAME: album[NAME],
                     'type': ALBUM,
@@ -195,7 +195,7 @@ def search(search_term):
             artist_data = []
             for artist in artists:
                 artist_data.append([counter, artist[NAME]])
-                discs.append({
+                dics.append({
                     ID: artist[ID],
                     NAME: artist[NAME],
                     'type': ARTIST,
@@ -217,7 +217,7 @@ def search(search_term):
             for playlist in playlists:
                 playlist_data.append(
                     [counter, playlist[NAME], playlist[OWNER][DISPLAY_NAME]])
-                discs.append({
+                dics.append({
                     ID: playlist[ID],
                     NAME: playlist[NAME],
                     'type': PLAYLIST,
@@ -239,8 +239,8 @@ def search(search_term):
         inputs = split_input(selection)
         for pos in inputs:
             position = int(pos)
-            for dic in discs:
-                print_pos = discs.index(dic) + 1
+            for dic in dics:
+                print_pos = dics.index(dic) + 1
                 if print_pos == position:
                     if dic['type'] == TRACK:
                         download_track(dic[ID])
